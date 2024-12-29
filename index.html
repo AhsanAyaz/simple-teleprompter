@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Teleprompter</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a1a;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .controls {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #333;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .prompter-container {
+            width: 100%;
+            max-width: 600px;
+            height: 50vh;
+            border: 2px solid #444;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+        }
+
+        #prompter-text {
+            padding: 15px;
+            white-space: pre-wrap;
+            color: #00ff00;
+            transform-origin: center;
+            position: relative;
+            font-size: 24px;
+        }
+
+        button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active {
+            background: #45a049;
+            transform: scale(0.98);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            max-width: 300px;
+            margin: 10px 0;
+            -webkit-appearance: none;
+            background: #4CAF50;
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 15px;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 16px;
+            resize: vertical;
+        }
+
+        #wake-lock-status {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #888;
+            text-align: center;
+        }
+
+        .control-value {
+            display: inline-block;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+
+            .controls {
+                padding: 10px;
+            }
+
+            button {
+                padding: 10px 15px;
+                font-size: 0.85rem;
+                flex: 1 1 auto;
+                min-width: 45%;
+            }
+
+            .prompter-container {
+                height: 40vh;
+            }
+
+            #prompter-text {
+                padding: 10px;
+            }
+
+            textarea {
+                height: 100px;
+            }
+        }
+
+        /* Prevent text selection */
+        .no-select {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div class="control-group">
+            <textarea id="input-text" placeholder="Enter your text here...">Welcome to the mobile-friendly teleprompter!
+
+This is a sample text that you can replace with your own content.
+
+The text will scroll automatically when you press Start.
+
+You can adjust the speed, font size, and flip the text using the controls.
+
+Your screen will stay awake while the teleprompter is running (on supported devices).</textarea>
+        </div>
+        
+        <div class="control-group">
+            <label>Scroll Speed: <span id="speed-value" class="control-value">2</span></label>
+            <input type="range" id="speed" min="0.5" max="5" step="0.5" value="2">
+        </div>
+        
+        <div class="control-group">
+            <label>Font Size: <span id="size-value" class="control-value">24</span>px</label>
+            <input type="range" id="font-size" min="16" max="72" value="24">
+        </div>
+        
+        <div class="control-group">
+            <div class="button-group no-select">
+                <button id="flip-h">Flip H</button>
+                <button id="flip-v">Flip V</button>
+                <button id="start">Start</button>
+                <button id="stop">Stop</button>
+                <button id="reset">Reset</button>
+            </div>
+        </div>
+
+        <div id="wake-lock-status"></div>
+    </div>
+
+    <div class="prompter-container">
+        <div id="prompter-text"></div>
+    </div>
+
+    <script>
+        const prompterText = document.getElementById('prompter-text');
+        const inputText = document.getElementById('input-text');
+        const speedControl = document.getElementById('speed');
+        const fontSizeControl = document.getElementById('font-size');
+        const speedValue = document.getElementById('speed-value');
+        const sizeValue = document.getElementById('size-value');
+        const wakeStatus = document.getElementById('wake-lock-status');
+        
+        let isScrolling = false;
+        let scrollPosition = 0;
+        let flipH = 1;
+        let flipV = 1;
+        let wakeLock = null;
+        let touchStartY = 0;
+        let currentSpeed = 2;
+
+        // Wake Lock functionality
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeStatus.textContent = 'Screen will stay awake while running';
+                    
+                    wakeLock.addEventListener('release', () => {
+                        wakeStatus.textContent = 'Screen can now sleep (wake lock released)';
+                    });
+                } else {
+                    wakeStatus.textContent = 'Wake Lock not supported on this device';
+                }
+            } catch (err) {
+                wakeStatus.textContent = `Wake Lock error: ${err.message}`;
+            }
+        }
+
+        async function releaseWakeLock() {
+            if (wakeLock) {
+                await wakeLock.release();
+                wakeLock = null;
+            }
+        }
+
+        // Handle visibility change
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible' && isScrolling) {
+                await requestWakeLock();
+            }
+        });
+        
+        function updateText() {
+            prompterText.textContent = inputText.value;
+        }
+
+        function updateTransform() {
+            prompterText.style.transform = `scaleX(${flipH}) scaleY(${flipV}) translateY(${-scrollPosition}px)`;
+        }
+
+        async function startScroll() {
+            if (!isScrolling) {
+                isScrolling = true;
+                await requestWakeLock();
+                scroll();
+            }
+        }
+
+        function scroll() {
+            if (isScrolling) {
+                scrollPosition += parseFloat(speedControl.value);
+                updateTransform();
+                requestAnimationFrame(scroll);
+            }
+        }
+
+        async function stopScroll() {
+            isScrolling = false;
+            await releaseWakeLock();
+        }
+
+        async function resetScroll() {
+            scrollPosition = 0;
+            updateTransform();
+            await stopScroll();
+        }
+
+        // Touch controls for prompter container
+        const prompterContainer = document.querySelector('.prompter-container');
+        
+        prompterContainer.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+            currentSpeed = parseFloat(speedControl.value);
+        }, { passive: true });
+
+        prompterContainer.addEventListener('touchmove', (e) => {
+            const touchY = e.touches[0].clientY;
+            const diff = touchStartY - touchY;
+            
+            // Adjust speed based on touch movement
+            let newSpeed = currentSpeed + (diff / 200);
+            newSpeed = Math.max(0.5, Math.min(5, newSpeed));
+            
+            speedControl.value = newSpeed;
+            speedValue.textContent = newSpeed.toFixed(1);
+        }, { passive: true });
+
+        // Event Listeners
+        document.getElementById('start').addEventListener('click', startScroll);
+        document.getElementById('stop').addEventListener('click', stopScroll);
+        document.getElementById('reset').addEventListener('click', resetScroll);
+        
+        document.getElementById('flip-h').addEventListener('click', () => {
+            flipH *= -1;
+            updateTransform();
+        });
+
+        document.getElementById('flip-v').addEventListener('click', () => {
+            flipV *= -1;
+            updateTransform();
+        });
+
+        inputText.addEventListener('input', updateText);
+        
+        speedControl.addEventListener('input', () => {
+            speedValue.textContent = speedControl.value;
+        });
+
+        fontSizeControl.addEventListener('input', () => {
+            const size = fontSizeControl.value;
+            sizeValue.textContent = size;
+            prompterText.style.fontSize = `${size}px`;
+        });
+
+        // Prevent double-tap zoom on mobile
+        document.addEventListener('touchend', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Initial setup
+        updateText();
+        prompterText.style.fontSize = `${fontSizeControl.value}px`;
+    </script>
+</body>
+</html>
