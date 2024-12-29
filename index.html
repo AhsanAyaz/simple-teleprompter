@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+<!-- Previous HTML head and style sections remain exactly the same -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Teleprompter</title>
     <style>
-        /* Previous styles remain the same until button styling */
+        /* All previous styles remain exactly the same */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -69,7 +70,6 @@
             font-size: 24px;
         }
 
-        /* Updated button styling */
         button {
             background: #4CAF50;
             border: none;
@@ -84,6 +84,24 @@
 
         button:active {
             background: #45a049;
+        }
+
+        .speed-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .speed-button {
+            background: #2a2a2a;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            min-width: 60px;
+        }
+
+        .speed-button.active {
+            background: #4CAF50;
         }
 
         input[type="range"] {
@@ -147,6 +165,12 @@
                 min-width: 45%;
             }
 
+            .speed-button {
+                flex: 1 1 auto;
+                min-width: 60px;
+                max-width: calc(25% - 5px);
+            }
+
             .prompter-container {
                 height: 40vh;
             }
@@ -176,8 +200,18 @@ Your screen will stay awake while the teleprompter is running (on supported devi
         </div>
         
         <div class="control-group">
-            <label>Scroll Speed: <span id="speed-value" class="control-value">2</span></label>
-            <input type="range" id="speed" min="0.5" max="5" step="0.5" value="2">
+            <label>Scroll Speed: <span id="speed-value" class="control-value">0.5</span></label>
+            <input type="range" id="speed" min="0.1" max="5" step="0.1" value="0.5">
+            <div class="speed-buttons">
+                <button class="speed-button" data-speed="0.1">Very Slow</button>
+                <button class="speed-button" data-speed="0.2">Extra Slow</button>
+                <button class="speed-button" data-speed="0.3">Slower</button>
+                <button class="speed-button" data-speed="0.5">Slow</button>
+                <button class="speed-button" data-speed="1">Normal</button>
+                <button class="speed-button" data-speed="2">Fast</button>
+                <button class="speed-button" data-speed="3">Faster</button>
+                <button class="speed-button" data-speed="5">Fastest</button>
+            </div>
         </div>
         
         <div class="control-group">
@@ -203,6 +237,7 @@ Your screen will stay awake while the teleprompter is running (on supported devi
     </div>
 
     <script>
+        // Previous script content remains the same until speed control modifications
         const prompterText = document.getElementById('prompter-text');
         const inputText = document.getElementById('input-text');
         const speedControl = document.getElementById('speed');
@@ -210,6 +245,7 @@ Your screen will stay awake while the teleprompter is running (on supported devi
         const speedValue = document.getElementById('speed-value');
         const sizeValue = document.getElementById('size-value');
         const wakeStatus = document.getElementById('wake-lock-status');
+        const speedButtons = document.querySelectorAll('.speed-button');
         
         let isScrolling = false;
         let scrollPosition = 0;
@@ -217,7 +253,29 @@ Your screen will stay awake while the teleprompter is running (on supported devi
         let flipV = 1;
         let wakeLock = null;
         let touchStartY = 0;
-        let currentSpeed = 2;
+        let currentSpeed = 0.5;
+
+        // Update speed button active state
+        function updateSpeedButtons(speed) {
+            speedButtons.forEach(button => {
+                if (parseFloat(button.dataset.speed) === parseFloat(speed)) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+        }
+
+        // Add click handlers for speed buttons
+        speedButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const newSpeed = parseFloat(button.dataset.speed);
+                speedControl.value = newSpeed;
+                speedValue.textContent = newSpeed.toFixed(1);
+                currentSpeed = newSpeed;
+                updateSpeedButtons(newSpeed);
+            });
+        });
 
         // Wake Lock functionality
         async function requestWakeLock() {
@@ -244,7 +302,7 @@ Your screen will stay awake while the teleprompter is running (on supported devi
             }
         }
 
-        // Handle visibility change
+        // Rest of the previous script functionality remains the same
         document.addEventListener('visibilitychange', async () => {
             if (wakeLock !== null && document.visibilityState === 'visible' && isScrolling) {
                 await requestWakeLock();
@@ -286,7 +344,7 @@ Your screen will stay awake while the teleprompter is running (on supported devi
             await stopScroll();
         }
 
-        // Touch controls for speed adjustment - only on the prompter container
+        // Touch controls for speed adjustment
         const prompterContainer = document.querySelector('.prompter-container');
         
         prompterContainer.addEventListener('touchstart', (e) => {
@@ -299,10 +357,11 @@ Your screen will stay awake while the teleprompter is running (on supported devi
             const diff = touchStartY - touchY;
             
             let newSpeed = currentSpeed + (diff / 200);
-            newSpeed = Math.max(0.5, Math.min(5, newSpeed));
+            newSpeed = Math.max(0.1, Math.min(5, newSpeed));
             
             speedControl.value = newSpeed;
             speedValue.textContent = newSpeed.toFixed(1);
+            updateSpeedButtons(newSpeed);
         }, { passive: true });
 
         // Event Listeners
@@ -323,7 +382,9 @@ Your screen will stay awake while the teleprompter is running (on supported devi
         inputText.addEventListener('input', updateText);
         
         speedControl.addEventListener('input', () => {
-            speedValue.textContent = speedControl.value;
+            const newSpeed = parseFloat(speedControl.value);
+            speedValue.textContent = newSpeed.toFixed(1);
+            updateSpeedButtons(newSpeed);
         });
 
         fontSizeControl.addEventListener('input', () => {
@@ -335,6 +396,7 @@ Your screen will stay awake while the teleprompter is running (on supported devi
         // Initial setup
         updateText();
         prompterText.style.fontSize = `${fontSizeControl.value}px`;
+        updateSpeedButtons(speedControl.value);
     </script>
 </body>
 </html>
