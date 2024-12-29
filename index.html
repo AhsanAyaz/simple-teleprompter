@@ -261,7 +261,6 @@ Your screen will stay awake while the teleprompter is running (on supported devi
     </div>
 
     <script>
-      // Previous script content remains the same until speed control modifications
       const body = document.body;
       const prompterText = document.getElementById("prompter-text");
       const inputText = document.getElementById("input-text");
@@ -283,6 +282,13 @@ Your screen will stay awake while the teleprompter is running (on supported devi
       let currentSpeed = 0.5;
       let lastWheelTime = 0;
       const manualScrollDebounceTime = 100; // milliseconds
+
+      // LocalStorage keys
+      const LS_SCRIPT = "teleprompter_script";
+      const LS_SPEED = "teleprompter_speed";
+      const LS_FONT_SIZE = "teleprompter_font_size";
+      const LS_FLIP_H = "teleprompter_flip_h";
+      const LS_FLIP_V = "teleprompter_flip_v";
 
       // Function to block body scroll
       function blockBodyScroll() {
@@ -315,6 +321,7 @@ Your screen will stay awake while the teleprompter is running (on supported devi
           speedValue.textContent = newSpeed.toFixed(1);
           currentSpeed = newSpeed;
           updateSpeedButtons(newSpeed);
+          localStorage.setItem(LS_SPEED, newSpeed);
         });
       });
 
@@ -357,6 +364,7 @@ Your screen will stay awake while the teleprompter is running (on supported devi
 
       function updateText() {
         prompterText.textContent = inputText.value;
+        localStorage.setItem(LS_SCRIPT, inputText.value);
         // Reset scroll position when text updates
         if (!isScrolling) {
           scrollPosition = 0;
@@ -522,11 +530,13 @@ Your screen will stay awake while the teleprompter is running (on supported devi
       document.getElementById("flip-h").addEventListener("click", () => {
         flipH *= -1;
         updateTransform();
+        localStorage.setItem(LS_FLIP_H, flipH);
       });
 
       document.getElementById("flip-v").addEventListener("click", () => {
         flipV *= -1;
         updateTransform();
+        localStorage.setItem(LS_FLIP_V, flipV);
       });
 
       inputText.addEventListener("input", updateText);
@@ -536,18 +546,55 @@ Your screen will stay awake while the teleprompter is running (on supported devi
         speedValue.textContent = newSpeed.toFixed(1);
         updateSpeedButtons(newSpeed);
         currentSpeed = newSpeed; // Update currentSpeed when slider changes
+        localStorage.setItem(LS_SPEED, newSpeed);
       });
 
       fontSizeControl.addEventListener("input", () => {
         const size = fontSizeControl.value;
         sizeValue.textContent = size;
         prompterText.style.fontSize = `${size}px`;
+        localStorage.setItem(LS_FONT_SIZE, size);
       });
 
+      // Load settings from localStorage
+      function loadSettings() {
+        const savedScript = localStorage.getItem(LS_SCRIPT);
+        if (savedScript) {
+          inputText.value = savedScript;
+        }
+        updateText();
+
+        const savedSpeed = localStorage.getItem(LS_SPEED);
+        if (savedSpeed) {
+          currentSpeed = parseFloat(savedSpeed);
+          speedControl.value = currentSpeed;
+          speedValue.textContent = currentSpeed.toFixed(1);
+          updateSpeedButtons(currentSpeed);
+        }
+
+        const savedFontSize = localStorage.getItem(LS_FONT_SIZE);
+        if (savedFontSize) {
+          const fontSize = parseInt(savedFontSize);
+          fontSizeControl.value = fontSize;
+          sizeValue.textContent = fontSize;
+          prompterText.style.fontSize = `${fontSize}px`;
+        }
+
+        const savedFlipH = localStorage.getItem(LS_FLIP_H);
+        if (savedFlipH) {
+          flipH = parseInt(savedFlipH);
+          updateTransform();
+        }
+
+        const savedFlipV = localStorage.getItem(LS_FLIP_V);
+        if (savedFlipV) {
+          flipV = parseInt(savedFlipV);
+          updateTransform();
+        }
+      }
+
       // Initial setup
-      updateText();
-      prompterText.style.fontSize = `${fontSizeControl.value}px`;
-      updateSpeedButtons(speedControl.value);
+      loadSettings();
     </script>
   </body>
 </html>
