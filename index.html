@@ -1,194 +1,204 @@
 <!DOCTYPE html>
 <!-- Previous HTML head and style sections remain exactly the same -->
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Teleprompter</title>
     <style>
-        /* All previous styles remain exactly the same */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+      /* All previous styles remain exactly the same */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
+      body {
+        font-family: Arial, sans-serif;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #1a1a1a;
+        color: white;
+        min-height: 100vh;
+        overflow-y: auto; /* Allow default body scroll */
+      }
+
+      body.scroll-blocked {
+        overflow: hidden !important;
+      }
+
+      .controls {
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #333;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 600px;
+      }
+
+      .control-group {
+        margin-bottom: 15px;
+      }
+
+      .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        justify-content: center;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+      }
+
+      .prompter-container {
+        width: 100%;
+        max-width: 600px;
+        height: 50vh;
+        border: 2px solid #444;
+        overflow: hidden; /* Keep overflow hidden for the automatic scroll */
+        position: relative;
+        background: #000;
+        border-radius: 8px;
+      }
+
+      #prompter-text {
+        padding: 15px;
+        white-space: pre-wrap;
+        color: #00ff00;
+        transform-origin: center top; /* Adjust transform origin for manual scroll */
+        position: absolute; /* Change to absolute to control position manually */
+        top: 0; /* Start from the top */
+        left: 0;
+        width: 100%; /* Ensure full width */
+        will-change: transform; /* Hint for performance */
+      }
+
+      button {
+        background: #4caf50;
+        border: none;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        min-width: 80px;
+        touch-action: manipulation;
+      }
+
+      button:active {
+        background: #45a049;
+      }
+
+      .speed-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+      }
+
+      .speed-button {
+        background: #2a2a2a;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        min-width: 60px;
+      }
+
+      .speed-button.active {
+        background: #4caf50;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        max-width: 300px;
+        margin: 10px 0;
+        -webkit-appearance: none;
+        background: #4caf50;
+        height: 6px;
+        border-radius: 3px;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: #fff;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+
+      textarea {
+        width: 100%;
+        height: 120px;
+        margin-bottom: 15px;
+        background: #2a2a2a;
+        color: white;
+        border: 1px solid #444;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 16px;
+        resize: vertical;
+        overflow: auto; /* Enable scrollbar when needed */
+      }
+
+      #wake-lock-status {
+        margin-top: 10px;
+        font-size: 0.8rem;
+        color: #888;
+        text-align: center;
+      }
+
+      .control-value {
+        display: inline-block;
+        min-width: 30px;
+        text-align: right;
+      }
+
+      @media (max-width: 480px) {
         body {
-            font-family: Arial, sans-serif;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: #1a1a1a;
-            color: white;
-            min-height: 100vh;
+          padding: 5px;
         }
 
         .controls {
-            margin-bottom: 15px;
-            padding: 15px;
-            background: #333;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 600px;
-        }
-
-        .control-group {
-            margin-bottom: 15px;
-        }
-
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            justify-content: center;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-        }
-
-        .prompter-container {
-            width: 100%;
-            max-width: 600px;
-            height: 50vh;
-            border: 2px solid #444;
-            overflow: hidden;
-            position: relative;
-            background: #000;
-            border-radius: 8px;
-        }
-
-        #prompter-text {
-            padding: 15px;
-            white-space: pre-wrap;
-            color: #00ff00;
-            transform-origin: center;
-            position: relative;
-            font-size: 24px;
+          padding: 10px;
         }
 
         button {
-            background: #4CAF50;
-            border: none;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            min-width: 80px;
-            touch-action: manipulation;
-        }
-
-        button:active {
-            background: #45a049;
-        }
-
-        .speed-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-top: 10px;
+          padding: 10px 15px;
+          font-size: 0.85rem;
+          flex: 1 1 auto;
+          min-width: 45%;
         }
 
         .speed-button {
-            background: #2a2a2a;
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            min-width: 60px;
+          flex: 1 1 auto;
+          min-width: 60px;
+          max-width: calc(25% - 5px);
         }
 
-        .speed-button.active {
-            background: #4CAF50;
+        .prompter-container {
+          height: 40vh;
         }
 
-        input[type="range"] {
-            width: 100%;
-            max-width: 300px;
-            margin: 10px 0;
-            -webkit-appearance: none;
-            background: #4CAF50;
-            height: 6px;
-            border-radius: 3px;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #fff;
-            border-radius: 50%;
-            cursor: pointer;
+        #prompter-text {
+          padding: 10px;
         }
 
         textarea {
-            width: 100%;
-            height: 120px;
-            margin-bottom: 15px;
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #444;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 16px;
-            resize: vertical;
+          height: 100px;
         }
-
-        #wake-lock-status {
-            margin-top: 10px;
-            font-size: 0.8rem;
-            color: #888;
-            text-align: center;
-        }
-
-        .control-value {
-            display: inline-block;
-            min-width: 30px;
-            text-align: right;
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 5px;
-            }
-
-            .controls {
-                padding: 10px;
-            }
-
-            button {
-                padding: 10px 15px;
-                font-size: 0.85rem;
-                flex: 1 1 auto;
-                min-width: 45%;
-            }
-
-            .speed-button {
-                flex: 1 1 auto;
-                min-width: 60px;
-                max-width: calc(25% - 5px);
-            }
-
-            .prompter-container {
-                height: 40vh;
-            }
-
-            #prompter-text {
-                padding: 10px;
-            }
-
-            textarea {
-                height: 100px;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="controls">
-        <div class="control-group">
-            <textarea id="input-text" placeholder="Enter your text here...">Welcome to the mobile-friendly teleprompter!
+      <div class="control-group">
+        <textarea id="input-text" placeholder="Enter your text here...">
+Welcome to the mobile-friendly teleprompter!
 
 This is a sample text that you can replace with your own content.
 
@@ -196,207 +206,348 @@ The text will scroll automatically when you press Start.
 
 You can adjust the speed, font size, and flip the text using the controls.
 
-Your screen will stay awake while the teleprompter is running (on supported devices).</textarea>
-        </div>
-        
-        <div class="control-group">
-            <label>Scroll Speed: <span id="speed-value" class="control-value">0.5</span></label>
-            <input type="range" id="speed" min="0.1" max="5" step="0.1" value="0.5">
-            <div class="speed-buttons">
-                <button class="speed-button" data-speed="0.1">Very Slow</button>
-                <button class="speed-button" data-speed="0.2">Extra Slow</button>
-                <button class="speed-button" data-speed="0.3">Slower</button>
-                <button class="speed-button" data-speed="0.5">Slow</button>
-                <button class="speed-button" data-speed="1">Normal</button>
-                <button class="speed-button" data-speed="2">Fast</button>
-                <button class="speed-button" data-speed="3">Faster</button>
-                <button class="speed-button" data-speed="5">Fastest</button>
-            </div>
-        </div>
-        
-        <div class="control-group">
-            <label>Font Size: <span id="size-value" class="control-value">24</span>px</label>
-            <input type="range" id="font-size" min="16" max="72" value="24">
-        </div>
-        
-        <div class="control-group">
-            <div class="button-group">
-                <button id="flip-h">Flip H</button>
-                <button id="flip-v">Flip V</button>
-                <button id="start">Start</button>
-                <button id="stop">Stop</button>
-                <button id="reset">Reset</button>
-            </div>
-        </div>
+Your screen will stay awake while the teleprompter is running (on supported devices).</textarea
+        >
+      </div>
 
-        <div id="wake-lock-status"></div>
+      <div class="control-group">
+        <label
+          >Scroll Speed:
+          <span id="speed-value" class="control-value">0.5</span></label
+        >
+        <input
+          type="range"
+          id="speed"
+          min="0.1"
+          max="5"
+          step="0.1"
+          value="0.5"
+        />
+        <div class="speed-buttons">
+          <button class="speed-button" data-speed="0.1">Very Slow</button>
+          <button class="speed-button" data-speed="0.2">Extra Slow</button>
+          <button class="speed-button" data-speed="0.3">Slower</button>
+          <button class="speed-button" data-speed="0.5">Slow</button>
+          <button class="speed-button" data-speed="1">Normal</button>
+          <button class="speed-button" data-speed="2">Fast</button>
+          <button class="speed-button" data-speed="3">Faster</button>
+          <button class="speed-button" data-speed="5">Fastest</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label
+          >Font Size:
+          <span id="size-value" class="control-value">24</span>px</label
+        >
+        <input type="range" id="font-size" min="16" max="72" value="24" />
+      </div>
+
+      <div class="control-group">
+        <div class="button-group">
+          <button id="flip-h">Flip H</button>
+          <button id="flip-v">Flip V</button>
+          <button id="start">Start</button>
+          <button id="stop">Stop</button>
+          <button id="reset">Reset</button>
+        </div>
+      </div>
+
+      <div id="wake-lock-status"></div>
     </div>
 
     <div class="prompter-container">
-        <div id="prompter-text"></div>
+      <div id="prompter-text"></div>
     </div>
 
     <script>
-        // Previous script content remains the same until speed control modifications
-        const prompterText = document.getElementById('prompter-text');
-        const inputText = document.getElementById('input-text');
-        const speedControl = document.getElementById('speed');
-        const fontSizeControl = document.getElementById('font-size');
-        const speedValue = document.getElementById('speed-value');
-        const sizeValue = document.getElementById('size-value');
-        const wakeStatus = document.getElementById('wake-lock-status');
-        const speedButtons = document.querySelectorAll('.speed-button');
-        
-        let isScrolling = false;
-        let scrollPosition = 0;
-        let flipH = 1;
-        let flipV = 1;
-        let wakeLock = null;
-        let touchStartY = 0;
-        let currentSpeed = 0.5;
+      // Previous script content remains the same until speed control modifications
+      const body = document.body;
+      const prompterText = document.getElementById("prompter-text");
+      const inputText = document.getElementById("input-text");
+      const speedControl = document.getElementById("speed");
+      const fontSizeControl = document.getElementById("font-size");
+      const speedValue = document.getElementById("speed-value");
+      const sizeValue = document.getElementById("size-value");
+      const wakeStatus = document.getElementById("wake-lock-status");
+      const speedButtons = document.querySelectorAll(".speed-button");
+      const prompterContainer = document.querySelector(".prompter-container");
 
-        // Update speed button active state
-        function updateSpeedButtons(speed) {
-            speedButtons.forEach(button => {
-                if (parseFloat(button.dataset.speed) === parseFloat(speed)) {
-                    button.classList.add('active');
-                } else {
-                    button.classList.remove('active');
-                }
+      let isScrolling = false;
+      let scrollPosition = 0;
+      let manualScroll = false;
+      let flipH = 1;
+      let flipV = 1;
+      let wakeLock = null;
+      let touchStartY = 0;
+      let currentSpeed = 0.5;
+      let lastWheelTime = 0;
+      const manualScrollDebounceTime = 100; // milliseconds
+
+      // Function to block body scroll
+      function blockBodyScroll() {
+        if (!body.classList.contains("scroll-blocked")) {
+          body.classList.add("scroll-blocked");
+        }
+      }
+
+      // Function to unblock body scroll
+      function unblockBodyScroll() {
+        body.classList.remove("scroll-blocked");
+      }
+
+      // Update speed button active state
+      function updateSpeedButtons(speed) {
+        speedButtons.forEach((button) => {
+          if (parseFloat(button.dataset.speed) === parseFloat(speed)) {
+            button.classList.add("active");
+          } else {
+            button.classList.remove("active");
+          }
+        });
+      }
+
+      // Add click handlers for speed buttons
+      speedButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const newSpeed = parseFloat(button.dataset.speed);
+          speedControl.value = newSpeed;
+          speedValue.textContent = newSpeed.toFixed(1);
+          currentSpeed = newSpeed;
+          updateSpeedButtons(newSpeed);
+        });
+      });
+
+      // Wake Lock functionality
+      async function requestWakeLock() {
+        try {
+          if ("wakeLock" in navigator) {
+            wakeLock = await navigator.wakeLock.request("screen");
+            wakeStatus.textContent = "Screen will stay awake while running";
+
+            wakeLock.addEventListener("release", () => {
+              wakeStatus.textContent =
+                "Screen can now sleep (wake lock released)";
             });
+          } else {
+            wakeStatus.textContent = "Wake Lock not supported on this device";
+          }
+        } catch (err) {
+          wakeStatus.textContent = `Wake Lock error: ${err.message}`;
         }
+      }
 
-        // Add click handlers for speed buttons
-        speedButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const newSpeed = parseFloat(button.dataset.speed);
-                speedControl.value = newSpeed;
-                speedValue.textContent = newSpeed.toFixed(1);
-                currentSpeed = newSpeed;
-                updateSpeedButtons(newSpeed);
-            });
-        });
+      async function releaseWakeLock() {
+        if (wakeLock) {
+          await wakeLock.release();
+          wakeLock = null;
+        }
+      }
 
-        // Wake Lock functionality
-        async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    wakeStatus.textContent = 'Screen will stay awake while running';
-                    
-                    wakeLock.addEventListener('release', () => {
-                        wakeStatus.textContent = 'Screen can now sleep (wake lock released)';
-                    });
-                } else {
-                    wakeStatus.textContent = 'Wake Lock not supported on this device';
-                }
-            } catch (err) {
-                wakeStatus.textContent = `Wake Lock error: ${err.message}`;
+      // Rest of the previous script functionality remains the same
+      document.addEventListener("visibilitychange", async () => {
+        if (
+          wakeLock !== null &&
+          document.visibilityState === "visible" &&
+          isScrolling
+        ) {
+          await requestWakeLock();
+        }
+      });
+
+      function updateText() {
+        prompterText.textContent = inputText.value;
+        // Reset scroll position when text updates
+        if (!isScrolling) {
+          scrollPosition = 0;
+          updateTransform();
+        }
+      }
+
+      function updateTransform() {
+        prompterText.style.transform = `scaleX(${flipH}) scaleY(${flipV}) translateY(${scrollPosition}px)`;
+      }
+
+      async function startScroll() {
+        if (!isScrolling) {
+          isScrolling = true;
+          manualScroll = false; // Reset manual scroll flag
+          await requestWakeLock();
+          scroll();
+        }
+      }
+
+      function scroll() {
+        if (isScrolling && !manualScroll) {
+          scrollPosition -= parseFloat(speedControl.value);
+          updateTransform();
+          requestAnimationFrame(scroll);
+        }
+      }
+
+      async function stopScroll() {
+        isScrolling = false;
+        await releaseWakeLock();
+      }
+
+      async function resetScroll() {
+        scrollPosition = 0;
+        updateTransform();
+        await stopScroll();
+      }
+
+      // Manual scroll for prompter-text (Desktop)
+      prompterContainer.addEventListener(
+        "wheel",
+        (e) => {
+          blockBodyScroll();
+          manualScroll = true;
+          scrollPosition += e.deltaY;
+          updateTransform();
+          lastWheelTime = Date.now();
+
+          // Debounce unblocking
+          setTimeout(() => {
+            if (Date.now() - lastWheelTime >= manualScrollDebounceTime) {
+              manualScroll = false;
+              if (!isScrolling) {
+                unblockBodyScroll();
+              }
             }
-        }
+          }, manualScrollDebounceTime + 10); // Add a small buffer
+          e.preventDefault();
+        },
+        { passive: false }
+      );
 
-        async function releaseWakeLock() {
-            if (wakeLock) {
-                await wakeLock.release();
-                wakeLock = null;
+      // Manual scroll for prompter-text (Mobile)
+      prompterContainer.addEventListener(
+        "touchstart",
+        (e) => {
+          touchStartY = e.touches[0].clientY;
+          manualScroll = true;
+          blockBodyScroll();
+          if (isScrolling) stopScroll(); // Stop automatic scrolling during manual scroll
+        },
+        { passive: false }
+      );
+
+      prompterContainer.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!manualScroll) return;
+          const touchY = e.touches[0].clientY;
+          const diff = touchStartY - touchY;
+          scrollPosition += diff;
+          updateTransform();
+          touchStartY = touchY;
+          e.preventDefault();
+        },
+        { passive: false }
+      );
+
+      prompterContainer.addEventListener("touchend", () => {
+        manualScroll = false;
+        if (!isScrolling) {
+          unblockBodyScroll();
+        }
+      });
+
+      prompterContainer.addEventListener("touchcancel", () => {
+        manualScroll = false;
+        if (!isScrolling) {
+          unblockBodyScroll();
+        }
+      });
+
+      // Manual scroll for input-text (block body scroll when textarea is scrolled)
+      inputText.addEventListener(
+        "wheel",
+        (e) => {
+          // Check if scrolling is occurring within the textarea content
+          if (inputText.scrollHeight > inputText.clientHeight) {
+            blockBodyScroll();
+            lastWheelTime = Date.now();
+            setTimeout(() => {
+              if (Date.now() - lastWheelTime >= manualScrollDebounceTime) {
+                unblockBodyScroll();
+              }
+            }, manualScrollDebounceTime + 10);
+          }
+        },
+        { passive: true }
+      );
+
+      inputText.addEventListener(
+        "touchstart",
+        () => {
+          // No need to block on touchstart, block on touchmove if needed
+        },
+        { passive: true }
+      );
+
+      inputText.addEventListener(
+        "touchmove",
+        (e) => {
+          // Check if scrolling is happening within the textarea
+          if (inputText.scrollHeight > inputText.clientHeight) {
+            const rect = inputText.getBoundingClientRect();
+            const touch = e.touches[0];
+            if (
+              touch.clientX >= rect.left &&
+              touch.clientX <= rect.right &&
+              touch.clientY >= rect.top &&
+              touch.clientY <= rect.bottom
+            ) {
+              blockBodyScroll();
             }
-        }
+          }
+        },
+        { passive: false }
+      );
 
-        // Rest of the previous script functionality remains the same
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible' && isScrolling) {
-                await requestWakeLock();
-            }
-        });
-        
-        function updateText() {
-            prompterText.textContent = inputText.value;
-        }
+      inputText.addEventListener("touchend", () => {
+        unblockBodyScroll();
+      });
 
-        function updateTransform() {
-            prompterText.style.transform = `scaleX(${flipH}) scaleY(${flipV}) translateY(${-scrollPosition}px)`;
-        }
+      inputText.addEventListener("touchcancel", () => {
+        unblockBodyScroll();
+      });
 
-        async function startScroll() {
-            if (!isScrolling) {
-                isScrolling = true;
-                await requestWakeLock();
-                scroll();
-            }
-        }
+      // Event Listeners
+      document.getElementById("start").addEventListener("click", startScroll);
+      document.getElementById("stop").addEventListener("click", stopScroll);
+      document.getElementById("reset").addEventListener("click", resetScroll);
 
-        function scroll() {
-            if (isScrolling) {
-                scrollPosition += parseFloat(speedControl.value);
-                updateTransform();
-                requestAnimationFrame(scroll);
-            }
-        }
+      document.getElementById("flip-h").addEventListener("click", () => {
+        flipH *= -1;
+        updateTransform();
+      });
 
-        async function stopScroll() {
-            isScrolling = false;
-            await releaseWakeLock();
-        }
+      document.getElementById("flip-v").addEventListener("click", () => {
+        flipV *= -1;
+        updateTransform();
+      });
 
-        async function resetScroll() {
-            scrollPosition = 0;
-            updateTransform();
-            await stopScroll();
-        }
+      inputText.addEventListener("input", updateText);
 
-        // Touch controls for speed adjustment
-        const prompterContainer = document.querySelector('.prompter-container');
-        
-        prompterContainer.addEventListener('touchstart', (e) => {
-            touchStartY = e.touches[0].clientY;
-            currentSpeed = parseFloat(speedControl.value);
-        }, { passive: true });
+      speedControl.addEventListener("input", () => {
+        const newSpeed = parseFloat(speedControl.value);
+        speedValue.textContent = newSpeed.toFixed(1);
+        updateSpeedButtons(newSpeed);
+        currentSpeed = newSpeed; // Update currentSpeed when slider changes
+      });
 
-        prompterContainer.addEventListener('touchmove', (e) => {
-            const touchY = e.touches[0].clientY;
-            const diff = touchStartY - touchY;
-            
-            let newSpeed = currentSpeed + (diff / 200);
-            newSpeed = Math.max(0.1, Math.min(5, newSpeed));
-            
-            speedControl.value = newSpeed;
-            speedValue.textContent = newSpeed.toFixed(1);
-            updateSpeedButtons(newSpeed);
-        }, { passive: true });
+      fontSizeControl.addEventListener("input", () => {
+        const size = fontSizeControl.value;
+        sizeValue.textContent = size;
+        prompterText.style.fontSize = `${size}px`;
+      });
 
-        // Event Listeners
-        document.getElementById('start').addEventListener('click', startScroll);
-        document.getElementById('stop').addEventListener('click', stopScroll);
-        document.getElementById('reset').addEventListener('click', resetScroll);
-        
-        document.getElementById('flip-h').addEventListener('click', () => {
-            flipH *= -1;
-            updateTransform();
-        });
-
-        document.getElementById('flip-v').addEventListener('click', () => {
-            flipV *= -1;
-            updateTransform();
-        });
-
-        inputText.addEventListener('input', updateText);
-        
-        speedControl.addEventListener('input', () => {
-            const newSpeed = parseFloat(speedControl.value);
-            speedValue.textContent = newSpeed.toFixed(1);
-            updateSpeedButtons(newSpeed);
-        });
-
-        fontSizeControl.addEventListener('input', () => {
-            const size = fontSizeControl.value;
-            sizeValue.textContent = size;
-            prompterText.style.fontSize = `${size}px`;
-        });
-
-        // Initial setup
-        updateText();
-        prompterText.style.fontSize = `${fontSizeControl.value}px`;
-        updateSpeedButtons(speedControl.value);
+      // Initial setup
+      updateText();
+      prompterText.style.fontSize = `${fontSizeControl.value}px`;
+      updateSpeedButtons(speedControl.value);
     </script>
-</body>
+  </body>
 </html>
